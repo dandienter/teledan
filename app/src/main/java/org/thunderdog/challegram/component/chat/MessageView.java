@@ -910,6 +910,15 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_file_download_24);
     }
 
+    // TeleDan: "Pin locally" - device-only pin, kept in addition to the
+    // server pins whose count Telegram limits (feature 25).
+    if (!isMore && messageCount == 1 && msg.canBeSaved()) {
+      boolean locallyPinned = Settings.instance().isLocallyPinned(msg.getChatId(), msg.getMessage().id);
+      ids.append(R.id.btn_messagePinLocal);
+      strings.append(locallyPinned ? R.string.UnpinLocally : R.string.PinLocally);
+      icons.append(R.drawable.deproko_baseline_pin_24);
+    }
+
     if (!isMore && msg.isTranslated()) {
       ids.append(R.id.btn_chatTranslateOff);
       strings.append(R.string.TranslateOff);

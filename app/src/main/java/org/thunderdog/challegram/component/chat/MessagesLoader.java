@@ -116,6 +116,13 @@ public class MessagesLoader implements Client.ResultHandler {
   private long contextId;
 
   private boolean canShowSponsoredMessage (long chatId) {
+    // TeleDan: Hide channel ads - when the mod toggle is on, sponsored
+    // messages are never requested, so channel ads are not shown
+    // (feature 34). This is the single point that decides whether
+    // TdApi.GetChatSponsoredMessages is sent for a channel.
+    if (Settings.instance().hideChannelAds()) {
+      return false;
+    }
     return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
   }
 
