@@ -30,6 +30,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
@@ -547,7 +548,9 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   private void updateOnlineState (boolean isUpdate) {
-    boolean allowOnline = BitwiseUtils.hasFlag(options, Options.SHOW_ONLINE);
+    // TeleDan: Hide online dot - suppress the online indicator everywhere
+    // avatars are drawn (chat list, member lists, ...). Local display only.
+    boolean allowOnline = BitwiseUtils.hasFlag(options, Options.SHOW_ONLINE) && !Settings.instance().hideOnlineDot();
     switch (dataType) {
       case DataType.NONE:
       case DataType.SPECIFIC_FILE:
