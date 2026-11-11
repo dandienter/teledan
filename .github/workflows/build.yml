@@ -59,7 +59,7 @@ jobs:
           sdk.dir=$HOME/Android/Sdk
           rust.dir=$(rustup show home)
           app.id=com.dandi.teledan
-          app.name=TeleDan
+          app.name=MyTelegram
           app.download_url=https://github.com/dandienter/teledan/releases
           app.sources_url=https://github.com/dandienter/teledan
           telegram.api_id=${{ secrets.TELEGRAM_API_ID || '94575' }}
