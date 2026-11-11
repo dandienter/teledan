@@ -902,6 +902,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_content_copy_24);
     }
 
+    // TeleDan: "Save voice note" - voice notes only, copies the audio
+    // file into the public Music/MyTelegram folder.
+    if (!isMore && messageCount == 1 && msg.canBeSaved() && content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR) {
+      ids.append(R.id.btn_messageSaveVoiceNote);
+      strings.append(R.string.SaveVoiceNote);
+      icons.append(R.drawable.baseline_file_download_24);
+    }
+
     if (!isMore && msg.isTranslated()) {
       ids.append(R.id.btn_chatTranslateOff);
       strings.append(R.string.TranslateOff);

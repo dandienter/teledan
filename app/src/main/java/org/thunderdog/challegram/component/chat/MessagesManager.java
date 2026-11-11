@@ -96,6 +96,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessagesController controller;
   private final Tdlib tdlib;
   private MessagesAdapter adapter;
+
+  // TeleDan Anti-Edit: original content of incoming text messages, captured
+  // right before their first edit is applied. Session only: cleared together
+  // with this manager when the chat is closed or reloaded.
+  private final Map<Long, TdApi.MessageContent> antiEditOriginalContents = new HashMap<>();
   private LinearLayoutManager manager;
   private final RecyclerView.OnScrollListener listener;
   private final MessagesSearchManagerMiddleware searchMiddleware;
@@ -2200,6 +2205,29 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void updateMessageContent (long chatId, long messageId, TdApi.MessageContent content) {
+    // TeleDan Anti-Edit: the first time an edit for an incoming text message
+    // arrives, the content currently shown is still the original one, so it
+    // is remembered (session only) and re-applied instead of the edited
+    // content. Later edits keep showing that same original content.
+    if (Settings.instance().antiEdit() && content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      TdApi.MessageContent originalContent = antiEditOriginalContents.get(messageId);
+      if (originalContent == null && !adapter.isEmpty()) {
+        ArrayList<TGMessage> currentItems = adapter.getItems();
+        if (currentItems != null) {
+          for (TGMessage item : currentItems) {
+            TdApi.Message currentMessage = item.getMessage(messageId);
+            if (currentMessage != null && !currentMessage.isOutgoing && currentMessage.content != null && currentMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+              originalContent = currentMessage.content;
+              antiEditOriginalContents.put(messageId, originalContent);
+              break;
+            }
+          }
+        }
+      }
+      if (originalContent != null) {
+        content = originalContent;
+      }
+    }
     controller.onMessageChanged(chatId, messageId, content);
     ArrayList<TGMessage> items = adapter.getItems();
     if (!adapter.isEmpty() && items != null) {
@@ -2361,7 +2389,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       for (long messageId : messageIds) {
         // TeleDan Anti-Delete: keep incoming messages that others deleted.
         // Own (outgoing) deletions are still removed as usual.
-        if (Settings.instance().antiDelete() && !item.isOutgoing()) {
+        // TeleDan Keep auto-deleted messages: deletions caused by an
+        // auto-delete / self-destruct timer arrive through this same update
+        // and carry no reason, so they cannot be told apart from manual
+        // deletions here. Either toggle therefore keeps incoming messages
+        // deleted for any reason, for the current session.
+        if ((Settings.instance().antiDelete() || Settings.instance().keepAutoDeletedMessages()) && !item.isOutgoing()) {
           continue;
         }
         switch (item.removeMessage(messageId)) {
