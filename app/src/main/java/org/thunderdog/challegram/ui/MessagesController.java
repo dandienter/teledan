@@ -5783,6 +5783,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (text != null)
           UI.copyText(TD.toCopyText(text), R.string.CopiedText);
         return true;
+      } else if (id == R.id.btn_messageCopyWithDate) {
+        // TeleDan: Copy with date & time - the message text plus a line with
+        // the full date and time the message was sent (TdApi.Message.date).
+        if (!selectedMessage.canBeSaved()) {
+          context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoCopy).hideDelayed();
+          return false;
+        }
+        TdApi.Message message = selectedMessage.getNewestMessage();
+        TdApi.FormattedText text = Td.textOrCaption(message.content);
+        if (text != null) {
+          String dateTime = Lang.getDate(message.date, TimeUnit.SECONDS) + ", " + Lang.time(message.date, TimeUnit.SECONDS);
+          UI.copyText(TD.toCopyText(text) + "\n" + dateTime, R.string.CopiedText);
+        }
+        return true;
       } else if (id == R.id.btn_messageEdit) {
         TdApi.Message message = null;
         if (selectedMessage instanceof TGMessageMedia) {
@@ -9809,7 +9823,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(
       initialSendOptions,
       getInputSuggestedPostInfo(replyInfo),
-      obtainSilentMode(),
+      // TeleDan: Silent send by default - when the mod toggle is on, every message
+      // sent from the chat input is sent without a notification sound.
+      obtainSilentMode() || Settings.instance().silentSendByDefault(),
       forceUpdateOrderOfInstalledStickerSets
     );
     List<TdApi.Function<?>> functions = (List<TdApi.Function<?>>) (List<?>) TD.sendMessageText(chatId, topicId, replyTo, finalSendOptions, content, tdlib.maxMessageTextLength());
