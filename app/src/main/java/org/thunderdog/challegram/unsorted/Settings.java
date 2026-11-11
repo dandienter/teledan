@@ -390,6 +390,11 @@ public class Settings {
   // TeleDan: Anti-Delete - keep messages that others delete (session only).
   // Bit 19 was previously used by a removed camera setting; safe for fresh installs.
   private static final int FLAG_OTHER_ANTI_DELETE = 1 << 19;
+  // TeleDan: Hide edited label - do not display the "edited" marker on messages.
+  // Bit 24 was previously used by a removed camera setting; safe for fresh installs.
+  // Note: all other bits of this int are taken, so the remaining MyTelegram toggles
+  // live in the long-based settings below (SETTING_FLAG_TELEDAN_*).
+  private static final int FLAG_OTHER_HIDE_EDITED_LABEL = 1 << 24;
   private static final int FLAG_OTHER_NO_CHAT_QUICK_SHARE = 1 << 10;
   private static final int FLAG_OTHER_NO_CHAT_QUICK_REPLY = 1 << 11;
   private static final int FLAG_OTHER_SEND_BY_ENTER = 1 << 12;
@@ -433,6 +438,11 @@ public class Settings {
   public static final long SETTING_FLAG_DYNAMIC_ORDER_EMOJI_PACKS = 1 << 18;
   public static final long SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE = 1 << 19;
   public static final long SETTING_FLAG_FORCE_DISABLE_HLS_VIDEO = 1 << 20;
+
+  // TeleDan: MyTelegram mod toggles. The int-based settings above (FLAG_OTHER_*)
+  // have no free bits left except bit 24, so these live in the long-based settings.
+  public static final long SETTING_FLAG_TELEDAN_FULL_TIME_IN_MESSAGES = 1 << 21;
+  public static final long SETTING_FLAG_TELEDAN_SILENT_SEND_BY_DEFAULT = 1 << 22;
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
@@ -3124,6 +3134,35 @@ public class Settings {
 
   public void setAntiDelete (boolean antiDelete) {
     setSetting(FLAG_OTHER_ANTI_DELETE, antiDelete);
+  }
+
+  // TeleDan: Hide edited label - do not display the "edited" marker on messages.
+  public boolean hideEditedLabel () {
+    return checkSetting(FLAG_OTHER_HIDE_EDITED_LABEL);
+  }
+
+  public void setHideEditedLabel (boolean hideEditedLabel) {
+    setSetting(FLAG_OTHER_HIDE_EDITED_LABEL, hideEditedLabel);
+  }
+
+  // TeleDan: Full time in messages - show date + time instead of only
+  // the time on messages that were not sent today.
+  public boolean fullTimeInMessages () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_FULL_TIME_IN_MESSAGES);
+  }
+
+  public void setFullTimeInMessages (boolean fullTimeInMessages) {
+    setNewSetting(SETTING_FLAG_TELEDAN_FULL_TIME_IN_MESSAGES, fullTimeInMessages);
+  }
+
+  // TeleDan: Silent send by default - send messages from the chat input
+  // without a notification sound for the recipient.
+  public boolean silentSendByDefault () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_SILENT_SEND_BY_DEFAULT);
+  }
+
+  public void setSilentSendByDefault (boolean silentSendByDefault) {
+    setNewSetting(SETTING_FLAG_TELEDAN_SILENT_SEND_BY_DEFAULT, silentSendByDefault);
   }
 
   public boolean needSendByEnter () {
