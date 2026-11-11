@@ -232,6 +232,7 @@
 
   <item type="id" name="controller_chatSettings" />
   <item type="id" name="controller_privacySettings" />
+  <item type="id" name="controller_myTelegramSettings" />
   <item type="id" name="controller_sessions" />
   <item type="id" name="controller_websites" />
   <item type="id" name="controller_instantView" />
@@ -600,6 +601,11 @@
   <item type="id" name="btn_hideSecretChats" />
   <item type="id" name="btn_ghostMode" />
   <item type="id" name="btn_antiDelete" />
+  <item type="id" name="btn_myTelegramMod" />
+  <item type="id" name="btn_hideEditedLabel" />
+  <item type="id" name="btn_fullTimeInMessages" />
+  <item type="id" name="btn_silentSendByDefault" />
+  <item type="id" name="btn_messageCopyWithDate" />
   <item type="id" name="btn_passcode" />
   <item type="id" name="btn_passcodeType_pin" />
   <item type="id" name="btn_passcodeType_password" />

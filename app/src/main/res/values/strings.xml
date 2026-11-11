@@ -2711,6 +2711,12 @@
   <string name="GhostModeInfo">Read messages without sending read receipts. Senders will not see that you have read their messages, and your online status will not be affected. Turn off to resume normal read receipts.</string>
   <string name="AntiDelete">Anti-Delete</string>
   <string name="AntiDeleteInfo">Keep messages that others delete, so you can still read them while the chat is open. Your own deleted messages are still removed. Messages disappear when the chat is reloaded.</string>
+  <string name="MyTelegramMod">MyTelegram Mod</string>
+  <string name="MyTelegramModInfo">Settings specific to this MyTelegram build. All of them are off by default and only change how the app behaves on this device.</string>
+  <string name="HideEditedLabel">Hide edited label</string>
+  <string name="FullTimeInMessages">Full time in messages</string>
+  <string name="SilentSendByDefault">Silent send by default</string>
+  <string name="CopyWithDateTime">Copy with date &amp; time</string>
   <string name="FailureMessageText">This message could not be displayed because of an error. We are very sorry for that.\n\nPlease copy the scary error details below and submit them to @tgandroidtests so we can investigate the issue. Thank you!</string>
   <string name="PrivacyCallsP2PTitle2">Peer-to-Peer in Calls</string>
   <string name="PeerToPeerInfo">Disabling peer-to-peer will relay all calls through Telegram servers to avoid revealing your IP address, but may decrease audio quality.</string>
