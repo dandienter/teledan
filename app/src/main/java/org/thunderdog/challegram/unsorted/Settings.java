@@ -443,6 +443,20 @@ public class Settings {
   // have no free bits left except bit 24, so these live in the long-based settings.
   public static final long SETTING_FLAG_TELEDAN_FULL_TIME_IN_MESSAGES = 1 << 21;
   public static final long SETTING_FLAG_TELEDAN_SILENT_SEND_BY_DEFAULT = 1 << 22;
+  // TeleDan: Fase 2 Batch 2 (privacy). Bits 23-29 of the long-based settings
+  // are unused (bits 0-22 are taken by the flags above), so they are used here.
+  public static final long SETTING_FLAG_TELEDAN_HIDE_ONLINE_STATUS = 1 << 23;
+  public static final long SETTING_FLAG_TELEDAN_HIDE_TYPING = 1 << 24;
+  public static final long SETTING_FLAG_TELEDAN_HIDE_ONLINE_DOT = 1 << 25;
+  public static final long SETTING_FLAG_TELEDAN_ANTI_EDIT = 1 << 26;
+  public static final long SETTING_FLAG_TELEDAN_BLOCK_SCREENSHOT_NOTIFICATIONS = 1 << 27;
+  public static final long SETTING_FLAG_TELEDAN_ANONYMOUS_STORY_VIEWS = 1 << 28;
+  public static final long SETTING_FLAG_TELEDAN_KEEP_AUTO_DELETED_MESSAGES = 1 << 29;
+  // TeleDan: Fase 2 Batch 3 (media). Bits 30-32 of the long-based settings
+  // are unused, so they are used here.
+  public static final long SETTING_FLAG_TELEDAN_SAVE_VIEW_ONCE_MEDIA = 1 << 30;
+  public static final long SETTING_FLAG_TELEDAN_AUTO_SAVE_MEDIA_TO_GALLERY = 1 << 31;
+  public static final long SETTING_FLAG_TELEDAN_SEND_MEDIA_AS_FILES = 1 << 32;
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
@@ -3163,6 +3177,117 @@ public class Settings {
 
   public void setSilentSendByDefault (boolean silentSendByDefault) {
     setNewSetting(SETTING_FLAG_TELEDAN_SILENT_SEND_BY_DEFAULT, silentSendByDefault);
+  }
+
+  // TeleDan: Hide online status - mirrors the account privacy setting for
+  // who can see the online status / last seen time. Changing this toggle
+  // applies TdApi.SetUserPrivacySettingRules for UserPrivacySettingShowStatus
+  // from the MyTelegram settings page (on: nobody, off: everybody), so it
+  // changes the real account privacy setting and can be overridden there.
+  public boolean hideOnlineStatus () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_HIDE_ONLINE_STATUS);
+  }
+
+  public void setHideOnlineStatus (boolean hideOnlineStatus) {
+    setNewSetting(SETTING_FLAG_TELEDAN_HIDE_ONLINE_STATUS, hideOnlineStatus);
+  }
+
+  // TeleDan: Hide typing - do not broadcast the "typing" chat action
+  // while composing a message.
+  public boolean hideTyping () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_HIDE_TYPING);
+  }
+
+  public void setHideTyping (boolean hideTyping) {
+    setNewSetting(SETTING_FLAG_TELEDAN_HIDE_TYPING, hideTyping);
+  }
+
+  // TeleDan: Hide online dot - do not draw the green online dot next to
+  // avatars in the chat list (and anywhere else avatars show it).
+  // Local display only, nothing is sent to the server.
+  public boolean hideOnlineDot () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_HIDE_ONLINE_DOT);
+  }
+
+  public void setHideOnlineDot (boolean hideOnlineDot) {
+    setNewSetting(SETTING_FLAG_TELEDAN_HIDE_ONLINE_DOT, hideOnlineDot);
+  }
+
+  // TeleDan: Anti-Edit - keep showing the original text of incoming
+  // messages after the sender edits them, for the current session
+  // (until the chat is reloaded).
+  public boolean antiEdit () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_ANTI_EDIT);
+  }
+
+  public void setAntiEdit (boolean antiEdit) {
+    setNewSetting(SETTING_FLAG_TELEDAN_ANTI_EDIT, antiEdit);
+  }
+
+  // TeleDan: Block screenshot notifications - do not tell the other side
+  // when a screenshot is taken while a secret chat is on screen.
+  // Only affects notifications originating from this device.
+  public boolean blockScreenshotNotifications () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_BLOCK_SCREENSHOT_NOTIFICATIONS);
+  }
+
+  public void setBlockScreenshotNotifications (boolean blockScreenshotNotifications) {
+    setNewSetting(SETTING_FLAG_TELEDAN_BLOCK_SCREENSHOT_NOTIFICATIONS, blockScreenshotNotifications);
+  }
+
+  // TeleDan: Anonymous story views. Note: this build of Telegram X has no
+  // story viewer and never calls TdApi.OpenStory, so no story view receipt
+  // is ever sent regardless of this toggle. The flag is kept so the option
+  // exists in one place if a story viewer is ever added.
+  public boolean anonymousStoryViews () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_ANONYMOUS_STORY_VIEWS);
+  }
+
+  public void setAnonymousStoryViews (boolean anonymousStoryViews) {
+    setNewSetting(SETTING_FLAG_TELEDAN_ANONYMOUS_STORY_VIEWS, anonymousStoryViews);
+  }
+
+  // TeleDan: Keep auto-deleted messages - incoming messages removed by an
+  // auto-delete / self-destruct timer are kept for the current session.
+  // Deletions arrive without a reason, so while this (or Anti-Delete) is
+  // on, any incoming deletion is kept, same as Anti-Delete.
+  public boolean keepAutoDeletedMessages () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_KEEP_AUTO_DELETED_MESSAGES);
+  }
+
+  public void setKeepAutoDeletedMessages (boolean keepAutoDeletedMessages) {
+    setNewSetting(SETTING_FLAG_TELEDAN_KEEP_AUTO_DELETED_MESSAGES, keepAutoDeletedMessages);
+  }
+
+  // TeleDan: Save view-once media - when a view-once photo or video is
+  // viewed, a copy of its file is kept in the public MyTelegram folder
+  // before the message burns itself.
+  public boolean saveViewOnceMedia () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_SAVE_VIEW_ONCE_MEDIA);
+  }
+
+  public void setSaveViewOnceMedia (boolean saveViewOnceMedia) {
+    setNewSetting(SETTING_FLAG_TELEDAN_SAVE_VIEW_ONCE_MEDIA, saveViewOnceMedia);
+  }
+
+  // TeleDan: Auto-save media to gallery - photos and videos that finish
+  // downloading are copied into the public MyTelegram media folders.
+  public boolean autoSaveMediaToGallery () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_AUTO_SAVE_MEDIA_TO_GALLERY);
+  }
+
+  public void setAutoSaveMediaToGallery (boolean autoSaveMediaToGallery) {
+    setNewSetting(SETTING_FLAG_TELEDAN_AUTO_SAVE_MEDIA_TO_GALLERY, autoSaveMediaToGallery);
+  }
+
+  // TeleDan: Send media in original quality - photos and videos picked
+  // from the gallery are sent as files (uncompressed) by default.
+  public boolean sendMediaAsFiles () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_SEND_MEDIA_AS_FILES);
+  }
+
+  public void setSendMediaAsFiles (boolean sendMediaAsFiles) {
+    setNewSetting(SETTING_FLAG_TELEDAN_SEND_MEDIA_AS_FILES, sendMediaAsFiles);
   }
 
   public boolean needSendByEnter () {
