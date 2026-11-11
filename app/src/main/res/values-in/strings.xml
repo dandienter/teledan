@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TeleDan: Bahasa Indonesia (feature 6), tahap pertama.
+
+     Cara kerja bahasa di Telegram X: sebagian besar string UI diambil
+     dari paket bahasa TDLib (server) sesuai bahasa yang dipilih di
+     Pengaturan > Bahasa - paket resmi "id" sudah tersedia di sana dan
+     mencakup hampir seluruh aplikasi. Berkas ini menerjemahkan string
+     yang hanya ada secara lokal di aplikasi: semua string mod
+     MyTelegram (yang tidak ada di paket server) dan string UI inti,
+     sebagai cadangan lokal. Terjemahan ditambah bertahap; hanya string
+     yang padanannya ada di values/strings.xml yang boleh masuk sini. -->
+<resources>
+  <!-- String mod MyTelegram -->
+  <string name="GhostMode">Mode Hantu</string>
+  <string name="GhostModeInfo">Baca pesan tanpa mengirim tanda sudah dibaca. Pengirim tidak akan melihat bahwa Anda sudah membaca pesannya, dan status online Anda tidak terpengaruh. Matikan untuk kembali ke tanda terima baca normal.</string>
+  <string name="AntiDelete">Anti-Hapus</string>
+  <string name="AntiDeleteInfo">Pertahankan pesan yang dihapus orang lain, supaya tetap bisa dibaca selama chat masih terbuka. Pesan yang Anda hapus sendiri tetap terhapus. Pesan hilang saat chat dimuat ulang.</string>
+  <string name="MyTelegramMod">Mod MyTelegram</string>
+  <string name="MyTelegramModInfo">Pengaturan khusus build MyTelegram ini. Semua mati secara default dan hanya mengubah perilaku aplikasi di perangkat ini.</string>
+  <string name="HideEditedLabel">Sembunyikan label diedit</string>
+  <string name="FullTimeInMessages">Waktu lengkap di pesan</string>
+  <string name="SilentSendByDefault">Kirim senyap secara default</string>
+  <string name="CopyWithDateTime">Salin dengan tanggal &amp; waktu</string>
+  <string name="HideOnlineStatus">Sembunyikan status online</string>
+  <string name="HideOnlineStatusInfo">Ini mengubah pengaturan privasi akun Anda: selama aktif, tidak ada yang bisa melihat status online dan waktu terakhir Anda. Mematikannya mengembalikan ke semua orang. Pengecualian khusus tidak dipertahankan, dan pengaturan ini juga bisa diubah dari halaman Privasi.</string>
+  <string name="HideTyping">Sembunyikan indikator mengetik</string>
+  <string name="HideOnlineDot">Sembunyikan titik online di daftar chat</string>
+  <string name="AntiEdit">Anti-Edit</string>
+  <string name="AntiEditInfo">Pertahankan teks asli pesan sesudah pengirim mengeditnya, supaya Anda tetap bisa membaca isi awalnya selama chat masih terbuka.</string>
+  <string name="BlockScreenshotNotifications">Blokir notifikasi tangkapan layar</string>
+  <string name="AnonymousStoryViews">Lihat story secara anonim</string>
+  <string name="KeepAutoDeletedMessages">Pertahankan pesan terhapus otomatis</string>
+  <string name="SaveViewOnceMedia">Simpan media sekali lihat</string>
+  <string name="AutoSaveMediaToGallery">Simpan media ke galeri otomatis</string>
+  <string name="SendOriginalQuality">Kirim media kualitas asli</string>
+  <string name="SaveVoiceNote">Simpan pesan suara</string>
+  <string name="VoiceNoteFileName">Pesan suara %1$s %2$s</string>
+  <string name="DownloadAllMedia">Unduh semua media</string>
+  <string name="DownloadingMediaFiles">Mengunduh %1$d berkas media</string>
+  <string name="NoMediaInChat">Tidak ada foto atau video di chat ini</string>
+  <string name="ForwardWithoutName">Teruskan tanpa nama</string>
+  <string name="ForwardWithoutNameInfo">Pesan diteruskan sebagai salinan, jadi tampak seolah Anda sendiri yang mengirimnya dan pengirim asli tidak ditampilkan. Hanya pesan yang dapat disalin yang terpengaruh.</string>
+  <string name="DisableLinkPreviews">Matikan pratinjau tautan</string>
+  <string name="HideChannelAds">Sembunyikan iklan channel</string>
+  <string name="AutoReply">Balas otomatis</string>
+  <string name="AutoReplyInfo">Selama aplikasi berjalan, orang yang mengirimi Anda pesan pribadi otomatis menerima teks balasan di bawah ini, paling sering sekali per menit per chat. Bot, channel, dan pesan Anda sendiri tidak pernah dijawab.</string>
+  <string name="AutoReplyText">Teks balasan otomatis</string>
+  <string name="AutoReplyTextHint">Dikirim otomatis ke pesan pribadi baru selama balas otomatis aktif.</string>
+  <string name="AutoReplyTextNone">Belum diatur</string>
+  <string name="DefaultAutoReplyText">Halo! Saya sedang tidak bisa membalas sekarang, nanti saya balas.</string>
+  <string name="AppIcon">Ikon aplikasi</string>
+  <string name="AppIconLogo">Logo MyTelegram</string>
+  <string name="AppIconClassic">Ikon klasik Telegram X</string>
+  <string name="PinLocally">Sematkan lokal</string>
+  <string name="UnpinLocally">Lepas sematan lokal</string>
+  <string name="PinnedLocally">Disematkan secara lokal (hanya perangkat ini)</string>
+  <string name="UnpinnedLocally">Sematan lokal dilepas</string>
+  <string name="LocalPins">Sematan lokal</string>
+  <string name="NoLocalPins">Belum ada sematan lokal di chat ini. Tekan lama sebuah pesan lalu pilih Sematkan lokal.</string>
+  <string name="LocalPinOf">Sematan lokal %1$d dari %2$d</string>
+  <string name="BackupChat">Cadangkan chat ke berkas</string>
+  <string name="BackupSavedToPath">Cadangan chat tersimpan di %1$s (%2$d pesan)</string>
+  <string name="BackupNoMessages">Tidak ada pesan untuk dicadangkan di chat ini</string>
+  <string name="ChatBackupFileName">Cadangan chat %1$s</string>
+
+  <!-- String UI inti -->
+  <string name="Settings">Pengaturan</string>
+  <string name="Chats">Chat</string>
+  <string name="Contacts">Kontak</string>
+  <string name="SavedMessages">Pesan Tersimpan</string>
+  <string name="Search">Cari</string>
+  <string name="Send">Kirim</string>
+  <string name="Cancel">Batal</string>
+  <string name="Delete">Hapus</string>
+  <string name="Copy">Salin</string>
+  <string name="Reply">Balas</string>
+  <string name="Share">Bagikan</string>
+  <string name="Language">Bahasa</string>
+  <string name="Notifications">Notifikasi</string>
+  <string name="NewGroup">Grup Baru</string>
+  <string name="NewChannel">Channel Baru</string>
+  <string name="NewSecretChat">Chat Rahasia Baru</string>
+  <string name="Calls">Panggilan</string>
+  <string name="Message">Pesan</string>
+  <string name="UnpinMessage">Lepas sematan pesan</string>
+  <string name="Mute">Bisukan</string>
+  <string name="Unmute">Bunyikan</string>
+  <string name="BlockUser">Blokir pengguna</string>
+  <string name="AddAccount">Tambah Akun</string>
+  <string name="Photo">Foto</string>
+  <string name="Video">Video</string>
+  <string name="Sticker">Stiker</string>
+  <string name="Today">Hari ini</string>
+  <string name="Yesterday">Kemarin</string>
+  <string name="Typing">sedang mengetik</string>
+  <string name="edit">Edit</string>
+  <string name="SendAsCopy">Kirim sebagai salinan</string>
+  <string name="RemoveCaptions">Hapus keterangan pada salinan</string>
+</resources>
