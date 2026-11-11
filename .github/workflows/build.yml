@@ -1,0 +1,71 @@
+name: Build TeleDan APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'buildSrc/**'
+      - 'gradle/**'
+      - 'version.properties'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Install rustup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Setup Rust toolchain (1.99.1 + Android targets)
+        run: bash scripts/setup-rust.sh
+
+      - name: Setup Android SDK (API 37, build-tools 37, NDK 30, cmake 3.22.1)
+        run: |
+          mkdir -p "$HOME/Android/Sdk"
+          export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
+          bash scripts/setup-sdk.sh --default-sdk-root
+
+      - name: Create local.properties (TeleDan branding)
+        run: |
+          cat > local.properties <<EOF
+          sdk.dir=$HOME/Android/Sdk
+          rust.dir=$(rustup show home)
+          app.id=com.dandi.teledan
+          app.name=TeleDan
+          app.download_url=https://github.com/dandienter/teledan/releases
+          app.sources_url=https://github.com/dandienter/teledan
+          telegram.api_id=${{ secrets.TELEGRAM_API_ID || '94575' }}
+          telegram.api_hash=${{ secrets.TELEGRAM_API_HASH || 'a3406de8d171bb422bb6ddf3bbd800e2' }}
+          tgx.extension=none
+          EOF
+          cat local.properties | sed 's/api_hash=.*/api_hash=***/'
+
+      - name: Validate git setup
+        run: ./gradlew :app:validateGitSetup
+
+      - name: Build debug APK (latest flavor, arm64)
+        run: ./gradlew :app:assembleLatestDebug -Pabi=arm64 --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: teledan-apk
+          path: app/build/outputs/apk/latest/debug/*.apk
+          if-no-files-found: error
