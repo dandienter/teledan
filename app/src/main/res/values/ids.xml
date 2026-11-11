@@ -606,6 +606,18 @@
   <item type="id" name="btn_fullTimeInMessages" />
   <item type="id" name="btn_silentSendByDefault" />
   <item type="id" name="btn_messageCopyWithDate" />
+  <item type="id" name="btn_hideOnlineStatus" />
+  <item type="id" name="btn_hideTyping" />
+  <item type="id" name="btn_hideOnlineDot" />
+  <item type="id" name="btn_antiEdit" />
+  <item type="id" name="btn_blockScreenshotNotifications" />
+  <item type="id" name="btn_anonymousStoryViews" />
+  <item type="id" name="btn_keepAutoDeletedMessages" />
+  <item type="id" name="btn_saveViewOnceMedia" />
+  <item type="id" name="btn_autoSaveMediaToGallery" />
+  <item type="id" name="btn_sendOriginalQuality" />
+  <item type="id" name="btn_messageSaveVoiceNote" />
+  <item type="id" name="btn_downloadAllMedia" />
   <item type="id" name="btn_passcode" />
   <item type="id" name="btn_passcodeType_pin" />
   <item type="id" name="btn_passcodeType_password" />
