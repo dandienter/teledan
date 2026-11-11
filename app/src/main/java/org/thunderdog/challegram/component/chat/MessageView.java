@@ -894,6 +894,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_content_copy_24);
     }
 
+    // TeleDan: "Copy with date & time" - text messages only, copies the
+    // message text together with the full date and time it was sent.
+    if (!isMore && msg.canBeSaved() && msg.canCopyText() && content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      ids.append(R.id.btn_messageCopyWithDate);
+      strings.append(R.string.CopyWithDateTime);
+      icons.append(R.drawable.baseline_content_copy_24);
+    }
+
     if (!isMore && msg.isTranslated()) {
       ids.append(R.id.btn_chatTranslateOff);
       strings.append(R.string.TranslateOff);
