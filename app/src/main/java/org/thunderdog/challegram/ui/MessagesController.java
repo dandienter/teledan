@@ -135,6 +135,7 @@ import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
 import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.data.InlineResultSticker;
+import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.data.TGBotStart;
@@ -197,10 +198,12 @@ import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.RightId;
+import org.thunderdog.challegram.telegram.TeleDanSaver;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -2282,10 +2285,111 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (manager.isReadyToSearch()) {
         openSearchMode();
       }
+    } else if (id == R.id.btn_downloadAllMedia) {
+      // TeleDan: Download all media in this chat
+      downloadAllChatMedia();
     } else if (id == R.id.btn_mute) {
       if (chat != null) {
         tdlib.ui().toggleMute(this, chat.id, false, null);
       }
+    }
+  }
+
+  // TeleDan: "Download all media" - pages through the chat history with
+  // the photo & video filter and queues every file for download through
+  // the shared files manager (already downloaded files are skipped by
+  // it). The scan stops when a page brings no new messages or after
+  // 2000 messages, then reports the queued count with a toast.
+  private void downloadAllChatMedia () {
+    if (chat == null) {
+      return;
+    }
+    final long chatId = chat.id;
+    final TdApi.MessageTopic topicId = getMessageTopicId();
+    final java.util.HashSet<Long> seenMessageIds = new java.util.HashSet<>();
+    final int[] queuedCount = new int[1];
+    downloadAllChatMediaPage(chatId, topicId, 0, seenMessageIds, queuedCount);
+  }
+
+  private void downloadAllChatMediaPage (final long chatId, final TdApi.MessageTopic topicId, final long fromMessageId, final java.util.HashSet<Long> seenMessageIds, final int[] queuedCount) {
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, topicId, null, null, fromMessageId, 0, 100, new TdApi.SearchMessagesFilterPhotoAndVideo()), object -> {
+      if (object.getConstructor() != TdApi.FoundChatMessages.CONSTRUCTOR) {
+        showDownloadAllMediaResult(queuedCount[0]);
+        return;
+      }
+      TdApi.FoundChatMessages found = (TdApi.FoundChatMessages) object;
+      int newCount = 0;
+      long oldestMessageId = fromMessageId;
+      for (TdApi.Message message : found.messages) {
+        oldestMessageId = message.id;
+        if (!seenMessageIds.add(message.id)) {
+          continue;
+        }
+        newCount++;
+        TdApi.File file = null;
+        switch (message.content.getConstructor()) {
+          case TdApi.MessagePhoto.CONSTRUCTOR: {
+            TdApi.PhotoSize size = MediaWrapper.buildTargetFile(((TdApi.MessagePhoto) message.content).photo);
+            if (size != null) {
+              file = size.photo;
+            }
+            break;
+          }
+          case TdApi.MessageVideo.CONSTRUCTOR: {
+            file = ((TdApi.MessageVideo) message.content).video.video;
+            break;
+          }
+        }
+        if (file != null) {
+          tdlib.files().downloadFile(file);
+          queuedCount[0]++;
+        }
+      }
+      if (newCount == 0 || seenMessageIds.size() >= 2000) {
+        showDownloadAllMediaResult(queuedCount[0]);
+      } else {
+        downloadAllChatMediaPage(chatId, topicId, oldestMessageId, seenMessageIds, queuedCount);
+      }
+    });
+  }
+
+  private void showDownloadAllMediaResult (final int count) {
+    runOnUiThreadOptional(() -> {
+      if (count > 0) {
+        UI.showToast(Lang.getString(R.string.DownloadingMediaFiles, count), Toast.LENGTH_LONG);
+      } else {
+        UI.showToast(Lang.getString(R.string.NoMediaInChat), Toast.LENGTH_LONG);
+      }
+    });
+  }
+
+  // TeleDan: "Save voice note" - copies the voice note audio file into
+  // the public Music/MyTelegram folder with a readable name (the date
+  // and time the message was sent). Downloads the file first when it is
+  // not on disk yet.
+  private void saveVoiceNote (final TdApi.File file, final TdApi.Message message) {
+    if (context().permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+      if (granted) {
+        saveVoiceNote(file, message);
+      }
+    })) {
+      return;
+    }
+    if (TD.isFileLoaded(file)) {
+      String name = Lang.getString(R.string.VoiceNoteFileName, Lang.getDate(message.date, TimeUnit.SECONDS), Lang.time(message.date, TimeUnit.SECONDS)).replace(':', '-').replace('/', '-');
+      TeleDanSaver.saveFile(file, TeleDanSaver.TYPE_AUDIO, name, destFile -> {
+        if (destFile != null) {
+          tdlib.ui().post(() -> UI.showToast(Lang.getString(R.string.DownloadedToPath, destFile.getPath()), Toast.LENGTH_LONG));
+        }
+      });
+    } else {
+      final boolean[] saved = {false};
+      tdlib.files().downloadFile(file, TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD, (updatedFile, error) -> {
+        if (!saved[0] && error == null && updatedFile != null && TD.isFileLoaded(updatedFile)) {
+          saved[0] = true;
+          saveVoiceNote(updatedFile, message);
+        }
+      });
     }
   }
 
@@ -4467,6 +4571,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       strings.append(R.string.Search);
     }
 
+    // TeleDan: Download all media - walks the chat history with the
+    // photo & video filter and queues every file for download.
+    if (!manager.isTotallyEmpty() && !isSecretChat() && !messagesHidden) {
+      ids.append(R.id.btn_downloadAllMedia);
+      strings.append(R.string.DownloadAllMedia);
+    }
+
     if ((!tdlib.isChannel(chat.id) || (status != null && !TD.isLeft(status))) && !tdlib.isSelfChat(chat.id)) {
       ids.append(R.id.btn_mute);
       strings.append(tdlib.chatNotificationsEnabled(chat.id) ? R.string.Mute : R.string.Unmute);
@@ -5795,6 +5906,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (text != null) {
           String dateTime = Lang.getDate(message.date, TimeUnit.SECONDS) + ", " + Lang.time(message.date, TimeUnit.SECONDS);
           UI.copyText(TD.toCopyText(text) + "\n" + dateTime, R.string.CopiedText);
+        }
+        return true;
+      } else if (id == R.id.btn_messageSaveVoiceNote) {
+        // TeleDan: Save voice note - copies the audio file into the
+        // public Music/MyTelegram folder.
+        TdApi.Message message = selectedMessage.getNewestMessage();
+        if (message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR) {
+          saveVoiceNote(((TdApi.MessageVoiceNote) message.content).voiceNote.voice, message);
         }
         return true;
       } else if (id == R.id.btn_messageEdit) {
@@ -10569,6 +10688,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void setChatAction (@TdApi.ChatAction.Constructors int action, boolean set, boolean force) {
     if (chat == null) {
+      return;
+    }
+    // TeleDan: Hide typing - never broadcast the "typing" action while
+    // composing. Since the action is then never recorded below, the later
+    // cancel request for it is a no-op as well.
+    if (set && action == TdApi.ChatActionTyping.CONSTRUCTOR && Settings.instance().hideTyping()) {
       return;
     }
     if (actions == null) {
