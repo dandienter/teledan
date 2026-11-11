@@ -28,6 +28,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -940,6 +941,12 @@ public class TdlibMessageViewer {
   }
 
   public void onScreenshotTaken (int timeSeconds) {
+    // TeleDan: Block screenshot notifications - never send the
+    // ViewMessages request with MessageSourceScreenshot that lets the
+    // other side know a screenshot was taken on this device.
+    if (Settings.instance().blockScreenshotNotifications()) {
+      return;
+    }
     if (screenshotMessages != null) {
       screenshotMessages.clear();
     }

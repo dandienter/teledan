@@ -401,6 +401,21 @@ public class TdlibFilesManager implements GlobalConnectionListener {
 
     loadSettings();
 
+    // TeleDan: Auto-save media to gallery - watch for finished downloads
+    // at the single central point of the files manager and keep a copy of
+    // photos and videos in the public MyTelegram folders.
+    addGlobalListener(new FileListener() {
+      @Override
+      public void onFileLoadProgress (TdApi.File file) { }
+
+      @Override
+      public void onFileLoadStateChanged (Tdlib tdlib, int fileId, @FileDownloadState int state, @Nullable TdApi.File downloadedFile) {
+        if (state == STATE_DOWNLOADED_OR_UPLOADED && downloadedFile != null && Settings.instance().autoSaveMediaToGallery()) {
+          TeleDanSaver.saveDownloadedFile(downloadedFile);
+        }
+      }
+    });
+
     tdlib.context().global().addConnectionListener(this);
   }
 
