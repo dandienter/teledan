@@ -1262,6 +1262,20 @@ public class MediaLayout extends FrameLayoutFix implements
     if (images == null || images.isEmpty()) {
       return false;
     }
+    // TeleDan: Send media in original quality - route local gallery
+    // picks through the existing "send as file" path (uncompressed)
+    // when every picked item supports it. Avatar picking and remote
+    // items keep their normal behavior.
+    if (!asFiles && !areRemote && mode != MODE_AVATAR_PICKER && Settings.instance().sendMediaAsFiles()) {
+      boolean allCanSendAsFiles = true;
+      for (ImageFile rawFile : images) {
+        if (!(rawFile instanceof ImageGalleryFile) || !((ImageGalleryFile) rawFile).canSendAsFile()) {
+          allCanSendAsFiles = false;
+          break;
+        }
+      }
+      asFiles = allCanSendAsFiles;
+    }
     // ArrayList<String> results = new ArrayList<>(images.size());
     if (areRemote) {
       if (target != null) {
