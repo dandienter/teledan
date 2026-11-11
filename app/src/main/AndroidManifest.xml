@@ -359,10 +359,10 @@
       android:launchMode="singleTask"
       android:windowSoftInputMode="stateHidden|adjustPan"
       android:exported="true">
-      <intent-filter android:label="@string/AppName">
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
+      <!-- TeleDan: the MAIN/LAUNCHER intent-filter lives on the two
+           activity-alias entries below (MainActivityLogo is the default),
+           so the user can switch the launcher icon from the MyTelegram
+           Mod settings page. MainActivity itself stays the target. -->
 
       <!-- Share from other apps -->
       <intent-filter>
@@ -423,6 +423,38 @@
         <data android:scheme="tg" />
       </intent-filter>
     </activity>
+
+    <!-- TeleDan: launcher icon choice (feature 8). Exactly one of these
+         aliases is enabled at a time; the MyTelegram Mod settings page
+         flips them with PackageManager.setComponentEnabledSetting.
+         MainActivityLogo (the user's ghost logo) is the default. -->
+    <activity-alias
+      android:name=".MainActivityLogo"
+      android:enabled="true"
+      android:exported="true"
+      android:icon="@mipmap/app_launcher"
+      android:label="@string/AppName"
+      android:roundIcon="@mipmap/app_launcher_round"
+      android:targetActivity=".MainActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+
+    <activity-alias
+      android:name=".MainActivityClassic"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/app_launcher_classic"
+      android:label="@string/AppName"
+      android:roundIcon="@mipmap/app_launcher_classic_round"
+      android:targetActivity=".MainActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
 
     <provider
       android:name=".FileProvider"
