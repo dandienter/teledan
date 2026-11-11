@@ -598,6 +598,8 @@
   <item type="id" name="btn_unblockSender" />
   <item type="id" name="btn_nobody" />
   <item type="id" name="btn_hideSecretChats" />
+  <item type="id" name="btn_ghostMode" />
+  <item type="id" name="btn_antiDelete" />
   <item type="id" name="btn_passcode" />
   <item type="id" name="btn_passcodeType_pin" />
   <item type="id" name="btn_passcodeType_password" />

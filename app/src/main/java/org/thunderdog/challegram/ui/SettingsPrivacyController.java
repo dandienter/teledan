@@ -100,6 +100,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
           v.getToggler().setRadioEnabled(!tdlib.areTopChatsDisabled(), isUpdate);
         } else if (itemId == R.id.btn_incognitoMode) {
           v.getToggler().setRadioEnabled(Settings.instance().needsIncognitoMode(), isUpdate);
+        } else if (itemId == R.id.btn_ghostMode) {
+          v.getToggler().setRadioEnabled(Settings.instance().dontReadMessages(), isUpdate);
+        } else if (itemId == R.id.btn_antiDelete) {
+          v.getToggler().setRadioEnabled(Settings.instance().antiDelete(), isUpdate);
         } else if (itemId == R.id.btn_blockedSenders) {
           v.setData(getBlockedSendersCount());
         } else if (itemId == R.id.btn_newChatsPrivacy) {
@@ -233,6 +237,14 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_incognitoMode, 0, R.string.IncognitoKeyboard));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.IncognitoKeyboardInfo));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_ghostMode, 0, R.string.GhostMode));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.GhostModeInfo));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_antiDelete, 0, R.string.AntiDelete));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AntiDeleteInfo));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_mapProvider, 0, R.string.MapPreviewProvider));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -376,6 +388,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       Settings.instance().setUseSecretLinkPreviews(adapter.toggleView(v));
     } else if (id == R.id.btn_incognitoMode) {
       Settings.instance().setIncognitoMode(adapter.toggleView(v) ? Settings.INCOGNITO_CHAT_SECRET : 0);
+    } else if (id == R.id.btn_ghostMode) {
+      Settings.instance().setDontReadMessages(adapter.toggleView(v));
+    } else if (id == R.id.btn_antiDelete) {
+      Settings.instance().setAntiDelete(adapter.toggleView(v));
     } else if (id == R.id.btn_hideSecretChats) {
       boolean hide = adapter.toggleView(v);
       boolean updated = Settings.instance().setNeedHideSecretChats(hide);

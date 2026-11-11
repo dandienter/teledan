@@ -387,6 +387,9 @@ public class Settings {
   private static final int FLAG_OTHER_REMEMBER_ALBUM_SETTING = 1 << 7;
   private static final int FLAG_OTHER_USE_SYSTEM_EMOJI = 1 << 8;
   private static final int FLAG_OTHER_DONT_READ_MESSAGES = 1 << 9;
+  // TeleDan: Anti-Delete - keep messages that others delete (session only).
+  // Bit 19 was previously used by a removed camera setting; safe for fresh installs.
+  private static final int FLAG_OTHER_ANTI_DELETE = 1 << 19;
   private static final int FLAG_OTHER_NO_CHAT_QUICK_SHARE = 1 << 10;
   private static final int FLAG_OTHER_NO_CHAT_QUICK_REPLY = 1 << 11;
   private static final int FLAG_OTHER_SEND_BY_ENTER = 1 << 12;
@@ -3103,16 +3106,24 @@ public class Settings {
     setSetting(FLAG_OTHER_USE_SYSTEM_EMOJI, useSystemEmoji);
   }
 
+  // TeleDan: Ghost Mode - read messages without sending read receipts.
+  // Ungated from debug-only so it works in release builds.
   public boolean dontReadMessages () {
-    return BuildConfig.DEBUG && checkSetting(FLAG_OTHER_DONT_READ_MESSAGES);
+    return checkSetting(FLAG_OTHER_DONT_READ_MESSAGES);
   }
 
   public void setDontReadMessages (boolean dontReadMessages) {
-    if (dontReadMessages) {
-      if (!BuildConfig.DEBUG || !Log.isEnabled(Log.TAG_MESSAGES_LOADER))
-        dontReadMessages = false;
-    }
     setSetting(FLAG_OTHER_DONT_READ_MESSAGES, dontReadMessages);
+  }
+
+  // TeleDan: Anti-Delete - keep incoming messages that the sender deleted,
+  // for the current session (until the chat is reloaded).
+  public boolean antiDelete () {
+    return checkSetting(FLAG_OTHER_ANTI_DELETE);
+  }
+
+  public void setAntiDelete (boolean antiDelete) {
+    setSetting(FLAG_OTHER_ANTI_DELETE, antiDelete);
   }
 
   public boolean needSendByEnter () {

@@ -2359,6 +2359,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       TGMessage item = adapter.getMessage(index);
 
       for (long messageId : messageIds) {
+        // TeleDan Anti-Delete: keep incoming messages that others deleted.
+        // Own (outgoing) deletions are still removed as usual.
+        if (Settings.instance().antiDelete() && !item.isOutgoing()) {
+          continue;
+        }
         switch (item.removeMessage(messageId)) {
           case TGMessage.REMOVE_NOTHING: {
             @TGMessage.MessageChangeType int changeType = item.removeMessagePreview(chatId, messageId);
