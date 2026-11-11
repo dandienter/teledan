@@ -379,6 +379,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     super.setArguments(args);
     this.mode = args.mode;
     this.displayingChatList = args.chatList != null ? args.chatList : ChatPosition.CHAT_LIST_MAIN;
+    // TeleDan: Forward without name - pre-check the built-in "Send as
+    // copy" option so messages are forwarded without the original
+    // sender's name by default (feature 24). The user can still uncheck
+    // it in the share options for a single forward.
+    if (this.mode == MODE_MESSAGES && Settings.instance().forwardWithoutName()) {
+      this.needHideAuthor = true;
+    }
   }
 
   @Override

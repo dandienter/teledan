@@ -2288,6 +2288,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (id == R.id.btn_downloadAllMedia) {
       // TeleDan: Download all media in this chat
       downloadAllChatMedia();
+    } else if (id == R.id.btn_backupChat) {
+      // TeleDan: Backup chat to file
+      backupChatToFile();
+    } else if (id == R.id.btn_localPins) {
+      // TeleDan: Jump to the next locally pinned message
+      jumpToNextLocalPin();
     } else if (id == R.id.btn_mute) {
       if (chat != null) {
         tdlib.ui().toggleMute(this, chat.id, false, null);
@@ -2361,6 +2367,158 @@ public class MessagesController extends ViewController<MessagesController.Argume
         UI.showToast(Lang.getString(R.string.NoMediaInChat), Toast.LENGTH_LONG);
       }
     });
+  }
+
+  // TeleDan: "Backup chat to file" - pages through the whole chat
+  // history (newest first), then writes it to a plain text file in
+  // Download/MyTelegram in chronological order, one line per message:
+  // "[date, time] Sender: text". Media messages are represented by a
+  // bracketed placeholder (with the caption, when there is one). The
+  // scan stops after 5000 messages.
+  private void backupChatToFile () {
+    if (chat == null) {
+      return;
+    }
+    if (context().permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+      if (granted) {
+        backupChatToFile();
+      }
+    })) {
+      return;
+    }
+    final long chatId = chat.id;
+    final TdApi.MessageTopic topicId = getMessageTopicId();
+    final String chatTitle = chat.title;
+    final java.util.ArrayList<TdApi.Message> collected = new java.util.ArrayList<>();
+    final java.util.HashSet<Long> seenMessageIds = new java.util.HashSet<>();
+    backupChatPage(chatId, topicId, chatTitle, 0, collected, seenMessageIds);
+  }
+
+  private void backupChatPage (final long chatId, final TdApi.MessageTopic topicId, final String chatTitle, final long fromMessageId, final java.util.ArrayList<TdApi.Message> collected, final java.util.HashSet<Long> seenMessageIds) {
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, topicId, null, null, fromMessageId, 0, 100, new TdApi.SearchMessagesFilterEmpty()), object -> {
+      if (object.getConstructor() != TdApi.FoundChatMessages.CONSTRUCTOR) {
+        finishChatBackup(chatTitle, collected);
+        return;
+      }
+      TdApi.FoundChatMessages found = (TdApi.FoundChatMessages) object;
+      long oldestMessageId = fromMessageId;
+      int newCount = 0;
+      for (TdApi.Message message : found.messages) {
+        oldestMessageId = message.id;
+        // Pages can repeat the boundary message; skip duplicates and
+        // stop when a page brings nothing new (same scheme as the
+        // "Download all media" scan).
+        if (!seenMessageIds.add(message.id)) {
+          continue;
+        }
+        collected.add(message);
+        newCount++;
+      }
+      if (newCount == 0 || collected.size() >= 5000) {
+        finishChatBackup(chatTitle, collected);
+      } else {
+        backupChatPage(chatId, topicId, chatTitle, oldestMessageId, collected, seenMessageIds);
+      }
+    });
+  }
+
+  private void finishChatBackup (final String chatTitle, final java.util.ArrayList<TdApi.Message> collected) {
+    if (collected.isEmpty()) {
+      runOnUiThreadOptional(() -> UI.showToast(Lang.getString(R.string.BackupNoMessages), Toast.LENGTH_LONG));
+      return;
+    }
+    StringBuilder sb = new StringBuilder();
+    for (int i = collected.size() - 1; i >= 0; i--) {
+      TdApi.Message message = collected.get(i);
+      sb.append('[')
+        .append(Lang.getDate(message.date, TimeUnit.SECONDS))
+        .append(", ")
+        .append(Lang.time(message.date, TimeUnit.SECONDS))
+        .append("] ")
+        .append(tdlib.senderName(message.senderId))
+        .append(": ")
+        .append(backupMessageText(message))
+        .append('\n');
+    }
+    String fileName = Lang.getString(R.string.ChatBackupFileName, chatTitle).replaceAll("[\\\\/:*?\"<>|]", "_") + ".txt";
+    final int messageCount = collected.size();
+    TeleDanSaver.saveTextFile(fileName, sb.toString(), destFile -> {
+      if (destFile != null) {
+        tdlib.ui().post(() -> UI.showToast(Lang.getString(R.string.BackupSavedToPath, destFile.getPath(), messageCount), Toast.LENGTH_LONG));
+      }
+    });
+  }
+
+  private static String backupMessageText (TdApi.Message message) {
+    TdApi.MessageContent content = message.content;
+    switch (content.getConstructor()) {
+      case TdApi.MessageText.CONSTRUCTOR:
+        return ((TdApi.MessageText) content).text.text;
+      case TdApi.MessagePhoto.CONSTRUCTOR: {
+        TdApi.FormattedText caption = ((TdApi.MessagePhoto) content).caption;
+        return caption != null && !caption.text.isEmpty() ? "[Photo] " + caption.text : "[Photo]";
+      }
+      case TdApi.MessageVideo.CONSTRUCTOR: {
+        TdApi.FormattedText caption = ((TdApi.MessageVideo) content).caption;
+        return caption != null && !caption.text.isEmpty() ? "[Video] " + caption.text : "[Video]";
+      }
+      case TdApi.MessageDocument.CONSTRUCTOR: {
+        TdApi.Document document = ((TdApi.MessageDocument) content).document;
+        return document != null && document.fileName != null && !document.fileName.isEmpty() ? "[Document] " + document.fileName : "[Document]";
+      }
+      case TdApi.MessageAudio.CONSTRUCTOR:
+        return "[Audio]";
+      case TdApi.MessageVoiceNote.CONSTRUCTOR:
+        return "[Voice note]";
+      case TdApi.MessageVideoNote.CONSTRUCTOR:
+        return "[Video note]";
+      case TdApi.MessageAnimation.CONSTRUCTOR:
+        return "[GIF]";
+      case TdApi.MessageSticker.CONSTRUCTOR:
+        return "[Sticker] " + ((TdApi.MessageSticker) content).sticker.emoji;
+      case TdApi.MessageLocation.CONSTRUCTOR:
+        return "[Location]";
+      case TdApi.MessageContact.CONSTRUCTOR: {
+        TdApi.Contact contact = ((TdApi.MessageContact) content).contact;
+        return "[Contact] " + contact.firstName + " " + contact.lastName + " " + contact.phoneNumber;
+      }
+      case TdApi.MessagePoll.CONSTRUCTOR:
+        return "[Poll] " + ((TdApi.MessagePoll) content).poll.question.text;
+      case TdApi.MessageCall.CONSTRUCTOR:
+        return "[Call]";
+      default:
+        return "[Message]";
+    }
+  }
+
+  // TeleDan: Local pins (feature 25) - Telegram's server-side pin limit
+  // cannot be changed by the client, so MyTelegram keeps extra pins on
+  // this device only. Each tap on the chat menu item jumps to the next
+  // locally pinned message, newest first, wrapping around.
+  private long lastLocalPinJumpId;
+
+  private void jumpToNextLocalPin () {
+    if (chat == null) {
+      return;
+    }
+    long[] pins = Settings.instance().getLocalPins(chat.id);
+    if (pins.length == 0) {
+      UI.showToast(Lang.getString(R.string.NoLocalPins), Toast.LENGTH_LONG);
+      return;
+    }
+    int index = 0;
+    for (int i = 0; i < pins.length; i++) {
+      if (pins[i] == lastLocalPinJumpId) {
+        index = i + 1;
+        break;
+      }
+    }
+    if (index >= pins.length) {
+      index = 0;
+    }
+    lastLocalPinJumpId = pins[index];
+    UI.showToast(Lang.getString(R.string.LocalPinOf, index + 1, pins.length), Toast.LENGTH_SHORT);
+    highlightMessage(new MessageId(chat.id, pins[index]));
   }
 
   // TeleDan: "Save voice note" - copies the voice note audio file into
@@ -4578,6 +4736,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       strings.append(R.string.DownloadAllMedia);
     }
 
+    // TeleDan: Backup chat to file + Local pins - export the chat
+    // history to a text file in Download/MyTelegram, and jump between
+    // the device-only pins of this chat (features 31 and 25).
+    if (!manager.isTotallyEmpty() && !messagesHidden) {
+      ids.append(R.id.btn_backupChat);
+      strings.append(R.string.BackupChat);
+      ids.append(R.id.btn_localPins);
+      strings.append(R.string.LocalPins);
+    }
+
     if ((!tdlib.isChannel(chat.id) || (status != null && !TD.isLeft(status))) && !tdlib.isSelfChat(chat.id)) {
       ids.append(R.id.btn_mute);
       strings.append(tdlib.chatNotificationsEnabled(chat.id) ? R.string.Mute : R.string.Unmute);
@@ -5915,6 +6083,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR) {
           saveVoiceNote(((TdApi.MessageVoiceNote) message.content).voiceNote.voice, message);
         }
+        return true;
+      } else if (id == R.id.btn_messagePinLocal) {
+        // TeleDan: Pin locally - toggles a device-only pin for this
+        // message (feature 25). Nothing is sent to the server; the chat
+        // menu item "Local pins" jumps between them.
+        TdApi.Message message = selectedMessage.getNewestMessage();
+        boolean pinned = Settings.instance().toggleLocalPin(message.chatId, message.id);
+        UI.showToast(Lang.getString(pinned ? R.string.PinnedLocally : R.string.UnpinnedLocally), Toast.LENGTH_SHORT);
         return true;
       } else if (id == R.id.btn_messageEdit) {
         TdApi.Message message = null;
@@ -9909,7 +10085,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     long chatId = getChatId();
     final @Nullable ReplyInfo replyInfo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
     final TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
-    final TdApi.LinkPreviewOptions linkPreviewOptions = allowLinkPreview ? obtainLinkPreviewOptions(false) : new TdApi.LinkPreviewOptions(
+    // TeleDan: Disable link previews - when the mod toggle is on, the
+    // sent message never gets a link preview, whatever the input shows.
+    final TdApi.LinkPreviewOptions linkPreviewOptions = allowLinkPreview && !Settings.instance().disableLinkPreviews() ? obtainLinkPreviewOptions(false) : new TdApi.LinkPreviewOptions(
       true, "", false, false, false
     );
     final TdApi.MessageTopic topicId = getMessageTopicId(replyInfo);

@@ -12,7 +12,9 @@
  */
 package org.thunderdog.challegram.ui;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.view.View;
 
 import org.drinkless.tdlib.TdApi;
@@ -86,6 +88,21 @@ public class SettingsMyTelegramController extends RecyclerViewController<Setting
           v.getToggler().setRadioEnabled(Settings.instance().fullTimeInMessages(), isUpdate);
         } else if (itemId == R.id.btn_silentSendByDefault) {
           v.getToggler().setRadioEnabled(Settings.instance().silentSendByDefault(), isUpdate);
+        } else if (itemId == R.id.btn_forwardWithoutName) {
+          v.getToggler().setRadioEnabled(Settings.instance().forwardWithoutName(), isUpdate);
+        } else if (itemId == R.id.btn_disableLinkPreviews) {
+          v.getToggler().setRadioEnabled(Settings.instance().disableLinkPreviews(), isUpdate);
+        } else if (itemId == R.id.btn_hideChannelAds) {
+          v.getToggler().setRadioEnabled(Settings.instance().hideChannelAds(), isUpdate);
+        } else if (itemId == R.id.btn_autoReply) {
+          v.getToggler().setRadioEnabled(Settings.instance().autoReply(), isUpdate);
+        } else if (itemId == R.id.btn_autoReplyText) {
+          String text = Settings.instance().autoReplyText();
+          v.setData(text == null || text.isEmpty() ? Lang.getString(R.string.AutoReplyTextNone) : text);
+        } else if (itemId == R.id.btn_appIconLogo) {
+          v.getToggler().setRadioEnabled(!Settings.instance().appIconClassic(), isUpdate);
+        } else if (itemId == R.id.btn_appIconClassic) {
+          v.getToggler().setRadioEnabled(Settings.instance().appIconClassic(), isUpdate);
         }
       }
     };
@@ -122,9 +139,27 @@ public class SettingsMyTelegramController extends RecyclerViewController<Setting
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_fullTimeInMessages, 0, R.string.FullTimeInMessages));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_silentSendByDefault, 0, R.string.SilentSendByDefault));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_forwardWithoutName, 0, R.string.ForwardWithoutName));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_disableLinkPreviews, 0, R.string.DisableLinkPreviews));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_hideChannelAds, 0, R.string.HideChannelAds));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_autoReply, 0, R.string.AutoReply));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autoReplyText, 0, R.string.AutoReplyText));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AppIcon));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appIconLogo, 0, R.string.AppIconLogo));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appIconClassic, 0, R.string.AppIconClassic));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.MyTelegramModInfo));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.HideOnlineStatusInfo));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ForwardWithoutNameInfo));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutoReplyInfo));
 
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
@@ -173,6 +208,57 @@ public class SettingsMyTelegramController extends RecyclerViewController<Setting
       Settings.instance().setFullTimeInMessages(adapter.toggleView(v));
     } else if (id == R.id.btn_silentSendByDefault) {
       Settings.instance().setSilentSendByDefault(adapter.toggleView(v));
+    } else if (id == R.id.btn_forwardWithoutName) {
+      Settings.instance().setForwardWithoutName(adapter.toggleView(v));
+    } else if (id == R.id.btn_disableLinkPreviews) {
+      Settings.instance().setDisableLinkPreviews(adapter.toggleView(v));
+    } else if (id == R.id.btn_hideChannelAds) {
+      Settings.instance().setHideChannelAds(adapter.toggleView(v));
+    } else if (id == R.id.btn_autoReply) {
+      boolean enabled = adapter.toggleView(v);
+      Settings.instance().setAutoReply(enabled);
+      // TeleDan: turning auto-reply on with no text yet fills in a
+      // default text, so the feature never stays silently inert.
+      if (enabled && Settings.instance().autoReplyText().isEmpty()) {
+        Settings.instance().setAutoReplyText(Lang.getString(R.string.DefaultAutoReplyText));
+        adapter.updateValuedSettingById(R.id.btn_autoReplyText);
+      }
+    } else if (id == R.id.btn_autoReplyText) {
+      EditAutoReplyController c = new EditAutoReplyController(context(), tdlib);
+      c.setArguments(new EditAutoReplyController.Args());
+      navigateTo(c);
+    } else if (id == R.id.btn_appIconLogo) {
+      applyAppIcon(false);
+    } else if (id == R.id.btn_appIconClassic) {
+      applyAppIcon(true);
+    }
+  }
+
+  // TeleDan: Launcher icon choice (feature 8) - exactly one of the two
+  // activity-alias components is enabled; the disabled one disappears
+  // from the launcher. DONT_KILL_APP keeps this process alive.
+  private void applyAppIcon (boolean classic) {
+    if (Settings.instance().appIconClassic() == classic) {
+      return;
+    }
+    Settings.instance().setAppIconClassic(classic);
+    PackageManager pm = context().getPackageManager();
+    String packageName = context().getPackageName();
+    ComponentName logoAlias = new ComponentName(packageName, "org.thunderdog.challegram.MainActivityLogo");
+    ComponentName classicAlias = new ComponentName(packageName, "org.thunderdog.challegram.MainActivityClassic");
+    pm.setComponentEnabledSetting(classic ? classicAlias : logoAlias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+    pm.setComponentEnabledSetting(classic ? logoAlias : classicAlias, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+    adapter.updateValuedSettingById(R.id.btn_appIconLogo);
+    adapter.updateValuedSettingById(R.id.btn_appIconClassic);
+  }
+
+  @Override
+  protected void onFocusStateChanged () {
+    super.onFocusStateChanged();
+    // TeleDan: refresh the auto-reply text preview after returning
+    // from its editor.
+    if (adapter != null) {
+      adapter.updateValuedSettingById(R.id.btn_autoReplyText);
     }
   }
 }
