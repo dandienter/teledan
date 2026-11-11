@@ -25,6 +25,14 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
+      # tdlib ships prebuilt native libs (libtdjni.so, OpenSSL) via Git LFS.
+      # actions/checkout does not fetch LFS objects inside submodules, so the
+      # files stay as LFS pointers and :app:validateGitSetup fails.
+      - name: Fetch Git LFS objects (tdlib native libs)
+        run: |
+          git lfs install
+          cd tdlib && git lfs pull
+
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
