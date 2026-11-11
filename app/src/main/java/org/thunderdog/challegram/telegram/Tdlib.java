@@ -5126,7 +5126,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void forwardMessage (long chatId, @Nullable TdApi.MessageTopic topicId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
-    client().send(new TdApi.ForwardMessages(chatId, topicId, fromChatId, new long[] {messageId}, options, false, false), messageHandler());
+    // TeleDan: Forward without name - when the mod toggle is on, this
+    // quick-forward path also sends a copy instead of a forward, so the
+    // original sender is not shown (feature 24).
+    boolean sendCopy = Settings.instance().forwardWithoutName();
+    client().send(new TdApi.ForwardMessages(chatId, topicId, fromChatId, new long[] {messageId}, options, sendCopy, false), messageHandler());
   }
 
   public void sendInlineQueryResult (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, long queryId, String resultId) {
@@ -7540,6 +7544,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     listeners.updateNewMessage(update);
 
     notificationManager.onUpdateNewMessage(update);
+
+    // TeleDan: Auto-reply - answer fresh private messages with the
+    // user-defined text while the app is running (feature 32).
+    TeleDanAutoReply.onNewMessage(this, update.message);
 
     context.global().notifyUpdateNewMessage(this, update);
 

@@ -147,4 +147,33 @@ public class TeleDanSaver {
       saveFile(file, TYPE_VIDEO);
     }
   }
+
+  // TeleDan: writes a text file into the public Download/MyTelegram
+  // folder (used by the chat backup, feature 31). Runs on a background
+  // thread; the callback receives the written file, or null on failure,
+  // also on a background thread.
+  public static void saveTextFile (@NonNull String name, @NonNull String content, @Nullable RunnableData<File> after) {
+    Background.instance().post(() -> {
+      File destFile = null;
+      try {
+        File destDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "MyTelegram");
+        if (FileUtils.createDirectory(destDir)) {
+          File candidate = new File(destDir, name);
+          java.io.FileOutputStream stream = new java.io.FileOutputStream(candidate);
+          try {
+            stream.write(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+          } finally {
+            stream.close();
+          }
+          U.scanFile(candidate);
+          destFile = candidate;
+        }
+      } catch (Throwable t) {
+        Log.w("TeleDan: failed to save text file to MyTelegram folder", t);
+      }
+      if (after != null) {
+        after.runWithData(destFile);
+      }
+    });
+  }
 }
