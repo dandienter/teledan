@@ -685,7 +685,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       int date = replaceTimeWithEditTime() ? msg.editDate : msg.date;
       if (date != 0) {
-        b.append(Lang.time(date, TimeUnit.SECONDS));
+        // TeleDan: Full time in messages - prepend the date for messages not sent today.
+        if (Settings.instance().fullTimeInMessages() && !DateUtils.isToday(date, TimeUnit.SECONDS)) {
+          b.append(Lang.dateTimeShort(date, TimeUnit.SECONDS));
+        } else {
+          b.append(Lang.time(date, TimeUnit.SECONDS));
+        }
       }
     }
 
@@ -1475,6 +1480,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private boolean shouldShowEdited () {
+    // TeleDan: Hide edited label - never draw the "edited" marker when the mod toggle is on.
+    // All rendering, width measurement and click handling for the marker go through this method.
+    if (Settings.instance().hideEditedLabel()) {
+      return false;
+    }
     return !headerDisabled() && (isEdited() || isBeingEdited()) && msg.viaBotUserId == 0 && !sender.isBot() && !sender.isServiceAccount() && (useBubbles() ? useBubbleTime() : (!isOutgoing() || hasHeader() || !shouldShowTicks())) && (getViewCount() > 0 || !isEventLog());
   }
 
