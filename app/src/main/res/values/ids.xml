@@ -618,6 +618,17 @@
   <item type="id" name="btn_sendOriginalQuality" />
   <item type="id" name="btn_messageSaveVoiceNote" />
   <item type="id" name="btn_downloadAllMedia" />
+  <item type="id" name="btn_forwardWithoutName" />
+  <item type="id" name="btn_disableLinkPreviews" />
+  <item type="id" name="btn_hideChannelAds" />
+  <item type="id" name="btn_autoReply" />
+  <item type="id" name="btn_autoReplyText" />
+  <item type="id" name="btn_appIconLogo" />
+  <item type="id" name="btn_appIconClassic" />
+  <item type="id" name="btn_messagePinLocal" />
+  <item type="id" name="btn_backupChat" />
+  <item type="id" name="btn_localPins" />
+  <item type="id" name="controller_editAutoReply" />
   <item type="id" name="btn_passcode" />
   <item type="id" name="btn_passcodeType_pin" />
   <item type="id" name="btn_passcodeType_password" />
