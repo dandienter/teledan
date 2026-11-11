@@ -455,8 +455,25 @@ public class Settings {
   // TeleDan: Fase 2 Batch 3 (media). Bits 30-32 of the long-based settings
   // are unused, so they are used here.
   public static final long SETTING_FLAG_TELEDAN_SAVE_VIEW_ONCE_MEDIA = 1 << 30;
-  public static final long SETTING_FLAG_TELEDAN_AUTO_SAVE_MEDIA_TO_GALLERY = 1 << 31;
-  public static final long SETTING_FLAG_TELEDAN_SEND_MEDIA_AS_FILES = 1 << 32;
+  // TeleDan (Batch 4 fix): bits 31 and 32 must be written as long shifts.
+  // As int shifts, 1 << 31 sign-extends to bits 31-63 and 1 << 32 wraps to
+  // bit 0, which would corrupt every other toggle in this long bitmask.
+  public static final long SETTING_FLAG_TELEDAN_AUTO_SAVE_MEDIA_TO_GALLERY = 1L << 31;
+  public static final long SETTING_FLAG_TELEDAN_SEND_MEDIA_AS_FILES = 1L << 32;
+  // TeleDan: Fase 2 Batch 4. Bits 33-36 of the long-based settings are
+  // unused, so they are used here.
+  public static final long SETTING_FLAG_TELEDAN_FORWARD_WITHOUT_NAME = 1L << 33;
+  public static final long SETTING_FLAG_TELEDAN_DISABLE_LINK_PREVIEWS = 1L << 34;
+  public static final long SETTING_FLAG_TELEDAN_HIDE_CHANNEL_ADS = 1L << 35;
+  public static final long SETTING_FLAG_TELEDAN_AUTO_REPLY = 1L << 36;
+
+  // TeleDan: Fase 2 Batch 4, feature 33 (unlimited accounts) - investigated:
+  // this fork has NO local account-count limit anywhere in the client.
+  // TdlibManager.newAccount() and the drawer's "Add account" item perform
+  // no count check, and there is no MAX_ACCOUNT-style constant to raise.
+  // The cap users can hit is enforced inside TDLib itself from the
+  // server-side premium configuration, so it cannot be lifted from the
+  // app source. No toggle is offered, because it would do nothing.
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
@@ -3288,6 +3305,140 @@ public class Settings {
 
   public void setSendMediaAsFiles (boolean sendMediaAsFiles) {
     setNewSetting(SETTING_FLAG_TELEDAN_SEND_MEDIA_AS_FILES, sendMediaAsFiles);
+  }
+
+  // TeleDan: Forward without name - forwards are sent as copies
+  // (TdApi.ForwardMessages send_copy) so the original sender is not shown.
+  public boolean forwardWithoutName () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_FORWARD_WITHOUT_NAME);
+  }
+
+  public void setForwardWithoutName (boolean forwardWithoutName) {
+    setNewSetting(SETTING_FLAG_TELEDAN_FORWARD_WITHOUT_NAME, forwardWithoutName);
+  }
+
+  // TeleDan: Disable link previews - text messages are sent with the
+  // link preview forcibly disabled.
+  public boolean disableLinkPreviews () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_DISABLE_LINK_PREVIEWS);
+  }
+
+  public void setDisableLinkPreviews (boolean disableLinkPreviews) {
+    setNewSetting(SETTING_FLAG_TELEDAN_DISABLE_LINK_PREVIEWS, disableLinkPreviews);
+  }
+
+  // TeleDan: Hide channel ads - sponsored messages are never requested
+  // for channels, so they are not shown.
+  public boolean hideChannelAds () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_HIDE_CHANNEL_ADS);
+  }
+
+  public void setHideChannelAds (boolean hideChannelAds) {
+    setNewSetting(SETTING_FLAG_TELEDAN_HIDE_CHANNEL_ADS, hideChannelAds);
+  }
+
+  // TeleDan: Auto-reply - while the app is running, incoming private
+  // messages get an automatic text reply (see TeleDanAutoReply).
+  public boolean autoReply () {
+    return getNewSetting(SETTING_FLAG_TELEDAN_AUTO_REPLY);
+  }
+
+  public void setAutoReply (boolean autoReply) {
+    setNewSetting(SETTING_FLAG_TELEDAN_AUTO_REPLY, autoReply);
+  }
+
+  private static final String KEY_TELEDAN_AUTO_REPLY_TEXT = "teledan_auto_reply_text";
+
+  public String autoReplyText () {
+    return getString(KEY_TELEDAN_AUTO_REPLY_TEXT, "");
+  }
+
+  public void setAutoReplyText (String autoReplyText) {
+    putString(KEY_TELEDAN_AUTO_REPLY_TEXT, autoReplyText);
+  }
+
+  // TeleDan: Local pins (feature 25). Server-side pin limits are set by
+  // Telegram and cannot be changed by the client, so MyTelegram keeps an
+  // additional device-only pin list per chat: message ids stored locally,
+  // never sent to the server. Note the ids are keyed by chat id only, so
+  // the same chat opened from another account on this device shares them.
+  private static final String KEY_TELEDAN_LOCAL_PINS_PREFIX = "teledan_local_pins_";
+
+  public boolean isLocallyPinned (long chatId, long messageId) {
+    for (long id : getLocalPins(chatId)) {
+      if (id == messageId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Returns the locally pinned message ids of a chat, newest first.
+  public long[] getLocalPins (long chatId) {
+    String stored = getString(KEY_TELEDAN_LOCAL_PINS_PREFIX + chatId, "");
+    if (stored == null || stored.isEmpty()) {
+      return new long[0];
+    }
+    String[] parts = stored.split(",");
+    long[] result = new long[parts.length];
+    int count = 0;
+    for (String part : parts) {
+      try {
+        result[count++] = Long.parseLong(part.trim());
+      } catch (NumberFormatException ignored) {
+      }
+    }
+    if (count != result.length) {
+      long[] trimmed = new long[count];
+      System.arraycopy(result, 0, trimmed, 0, count);
+      result = trimmed;
+    }
+    // Message ids grow over time, so sorting descending gives newest first.
+    java.util.Arrays.sort(result);
+    for (int i = 0, j = result.length - 1; i < j; i++, j--) {
+      long tmp = result[i];
+      result[i] = result[j];
+      result[j] = tmp;
+    }
+    return result;
+  }
+
+  // Toggles a local pin; returns the new state (true = now pinned).
+  public boolean toggleLocalPin (long chatId, long messageId) {
+    long[] current = getLocalPins(chatId);
+    StringBuilder sb = new StringBuilder();
+    boolean removed = false;
+    for (long id : current) {
+      if (id == messageId) {
+        removed = true;
+        continue;
+      }
+      if (sb.length() > 0) {
+        sb.append(',');
+      }
+      sb.append(id);
+    }
+    if (!removed) {
+      if (sb.length() > 0) {
+        sb.append(',');
+      }
+      sb.append(messageId);
+    }
+    putString(KEY_TELEDAN_LOCAL_PINS_PREFIX + chatId, sb.toString());
+    return !removed;
+  }
+
+  // TeleDan: Launcher icon choice (feature 8). "logo" is the user's
+  // MyTelegram logo (default), "classic" is the original Telegram X icon.
+  // Applied through the activity-alias entries in the manifest.
+  private static final String KEY_TELEDAN_APP_ICON = "teledan_app_icon";
+
+  public boolean appIconClassic () {
+    return "classic".equals(getString(KEY_TELEDAN_APP_ICON, "logo"));
+  }
+
+  public void setAppIconClassic (boolean classic) {
+    putString(KEY_TELEDAN_APP_ICON, classic ? "classic" : "logo");
   }
 
   public boolean needSendByEnter () {
