@@ -15,6 +15,9 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
+    # Telegram-X scripts use `tput` for colors; it fails when TERM is unset/dumb.
+    env:
+      TERM: xterm-256color
     steps:
       - name: Checkout (with submodules)
         uses: actions/checkout@v4
