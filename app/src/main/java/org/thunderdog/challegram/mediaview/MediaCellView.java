@@ -64,6 +64,7 @@ import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.gl.EGLEditorView;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TeleDanSaver;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -71,6 +72,7 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
@@ -1320,6 +1322,17 @@ public class MediaCellView extends ViewGroup implements
     }
 
     this.media = media;
+
+    // TeleDan: Save view-once media - same as in onStateChanged, for the
+    // case where the view-once file was already downloaded when the item
+    // is bound to this cell.
+    if (media != null && media.isViewOnce() && Settings.instance().saveViewOnceMedia()) {
+      TdApi.File targetFile = media.getTargetFile();
+      if (TD.isFileLoaded(targetFile)) {
+        TeleDanSaver.saveFile(targetFile, media.isVideo() ? TeleDanSaver.TYPE_VIDEO : TeleDanSaver.TYPE_PHOTO);
+      }
+    }
+
     this.bufferingProgressView.setProgressVisibleInstant(false);
 
     boolean needLock = needLock();
@@ -2135,6 +2148,13 @@ public class MediaCellView extends ViewGroup implements
   @Override
   public void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) {
     updateCanSeek();
+
+    // TeleDan: Save view-once media - the file has just finished
+    // downloading while the view-once item is on screen, so keep a copy
+    // in the public MyTelegram folder before the message burns itself.
+    if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED && media != null && media.isViewOnce() && Settings.instance().saveViewOnceMedia()) {
+      TeleDanSaver.saveFile(file, media.isVideo() ? TeleDanSaver.TYPE_VIDEO : TeleDanSaver.TYPE_PHOTO);
+    }
 
     if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED && (forceTouchMode || (media != null && media.isAutoplay()))) {
       autoplayIfNeeded(false);
