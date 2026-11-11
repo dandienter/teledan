@@ -2138,6 +2138,19 @@ public class Lang {
     );
   }
 
+  // TeleDan: date + time without year, e.g. "05 Nov, 14:03",
+  // used by the "Full time in messages" MyTelegram mod toggle.
+  public static String dateTimeShort (long unixTime, TimeUnit unit) {
+    long timeMs = unit.toMillis(unixTime);
+    return systemDateTime(
+      timeMs,
+      STYLE_MEDIUM,
+      STYLE_SHORT,
+      "dd MMM, h:mm a",
+      "dd MMM, H:mm"
+    );
+  }
+
   private static String dateFull (long unixTime, TimeUnit unit) {
     long timeMs = unit.toMillis(unixTime);
     return systemDateWithoutYear(timeMs, STYLE_LONG, "d MMMM");
